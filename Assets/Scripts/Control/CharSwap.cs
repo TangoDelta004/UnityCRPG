@@ -160,7 +160,7 @@ namespace Control {
         // when a player is linked, that link is added to the 'linked' list until that list has 4 members in it. at that point, everyone is linked. empty the lists and set the boolean true
         // however, if you want to have 2 separately linked groups... i.e. player1-player2 | player3-player4
         // then that second team is used in the backup list.
-        // determining whether you fill the linked list or the backup list is with the linked players respect to the current player
+        // determining whether you fill the linked list or the backup list is with the linked players respect to the already linked players
         public void LinkPlayer(int playerindex) {
 
             linkPlayerIndex = playerindex;
@@ -171,9 +171,29 @@ namespace Control {
                 }
             }
             // pre-check to make sure BOTH indexes arent in the list (to prevent spamming the list)
-            // also prevents 1 player linking themselves to themselves.
             if (!PreCheck(currentPlayerIndex, linkPlayerIndex)) {
                 return; // failed precheck, do nothing
+            }
+
+            // check if player is trying to link himself. if he is, he needs to join the already linked people
+            // unless the lists are empty in which theres no one to link to so just return
+            if (currentPlayerIndex == linkPlayerIndex) {
+                if (!linked.Contains(currentPlayerIndex) && linked.Count > 0) {
+                    foreach (Transform player in playerList) { // join the club
+                        player.GetComponent<CharSwap>().linked.Add(currentPlayerIndex);
+                    }
+                    if (linked.Count == 4) { // we just made a completeLink, empty the lists and set value to true
+                        foreach (Transform player in playerList) { // update every player with new linked info
+                            player.GetComponent<CharSwap>().linked.Clear();
+                            player.GetComponent<CharSwap>().backup.Clear();
+                            player.GetComponent<CharSwap>().completeLink = true;
+                        }
+                    }
+                    HandleFollowers();
+                    return;
+                } else {
+                    return;
+                }
             }
 
             // the next case to cover is the case where neither the current player nor the player we are handling are in the list at all BUT linked list is not empty
@@ -333,13 +353,7 @@ namespace Control {
         }
 
         // pre-check to make sure BOTH indexes arent in the list (to prevent spamming the list)
-        // also prevents 1 player linking themselves to themselves.
         bool PreCheck(int cpIndex, int lIndex) {
-
-            if (cpIndex == lIndex) {
-                return false; // someone tried to link to themselves
-            }
-
             if (linked.Contains(cpIndex) && linked.Contains(lIndex)) {
                 return false;
             }
