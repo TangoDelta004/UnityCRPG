@@ -17,6 +17,7 @@ namespace Movement {
 
         public void MoveTo(Vector3 destination) {
             targetDest.transform.position = destination;
+            float distanceInFeet = Vector3.Distance(player.transform.position, destination) * 3;
             player.SetDestination(destination);
 
         }

@@ -16,6 +16,8 @@ namespace Control {
         public Vector3 newZoom;
         public Vector3 zoomAmount;
 
+        public Vector3 offset;
+
         // these exist to swap the camera to a particular player when a button is pressed
 
         public Transform currentPlayer;
@@ -34,10 +36,10 @@ namespace Control {
             if (detached) {
                 HandleMovementInput();
             } else {
-                transform.position = currentPlayer.position;
+                transform.position = currentPlayer.position + offset;
             }
             HandleZoom();
-            HandleRotation();
+            //HandleRotation();
         }
 
         void HandleZoom() {
@@ -65,18 +67,19 @@ namespace Control {
             transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * movementTime);
         }
 
+        // handle movement uses diagnals instead of cardinal movement, because the world is isometric
         void HandleMovementInput() {
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) {
-                newPosition += (transform.forward * movementSpeed);
+                newPosition += (transform.forward * movementSpeed + transform.right * movementSpeed);
             }
             if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) {
-                newPosition += (transform.forward * -movementSpeed);
+                newPosition += (transform.forward * -movementSpeed + transform.right * -movementSpeed);
             }
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) {
-                newPosition += (transform.right * movementSpeed);
+                newPosition += (transform.forward * -movementSpeed + transform.right * movementSpeed);
             }
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) {
-                newPosition += (transform.right * -movementSpeed);
+                newPosition += (transform.forward * movementSpeed + transform.right * -movementSpeed);
             }
             transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
         }
@@ -94,8 +97,8 @@ namespace Control {
                 if (!detached) {
                     // reset camera position and newposition to the player so detaching happens on top of player and 
                     // not the last place you reattached from
-                    transform.position = currentPlayer.position;
-                    newPosition = currentPlayer.position;
+                    transform.position = currentPlayer.position + offset;
+                    newPosition = currentPlayer.position + offset;
                     detached = true;
 
                 }
