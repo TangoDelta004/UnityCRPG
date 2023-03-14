@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Movement;
+using UnityEngine.Tilemaps;
 
 namespace Control {
     public class PlayerController : MonoBehaviour {
@@ -21,8 +22,14 @@ namespace Control {
             RaycastHit hit;
             bool hasHit = Physics.Raycast(ray, out hit);
             if (hasHit) {
-                GetComponent<Mover>().MoveTo(hit.point);
+                if (hit.transform.tag == "Walkable") {
+                    GetComponent<Mover>().MoveTo(hit.point);
+                }
+
             }
+
+
         }
     }
+
 }
