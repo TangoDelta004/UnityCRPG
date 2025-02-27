@@ -5,13 +5,9 @@ using UnityEngine;
 namespace Control {
     public class CameraController : MonoBehaviour {
 
-
         public Transform cameraTransform;
         public float movementSpeed;
         public float movementTime;
-        public float rotationAmount;
-        public float minZoom;
-        public float maxZoom;
 
         public Camera cam;
 
@@ -19,53 +15,24 @@ namespace Control {
         public float maxOrthoZoom;
         public float currentOrthoZoom;
 
-        public Quaternion newRotation;
         public Vector3 newPosition;
-        public Vector3 newZoom;
-        public Vector3 zoomAmount;
+
+        private Vector3 lastMousePosition;
 
         public Vector3 offset;
-
-        // these exist to swap the camera to a particular player when a button is pressed
-
-        public Transform currentPlayer;
-
-        public bool detached;
+        private Transform[] playerCharacters;
 
         // Start is called before the first frame update
         void Start() {
             newPosition = transform.position;
-            newRotation = transform.rotation;
-            newZoom = cameraTransform.localPosition;
-
+            FindAndFocusOnPlayer();
         }
 
         // Update is called once per frame
         void Update() {
-            if (detached) {
-                HandleMovementInput();
-            } else {
-                transform.position = currentPlayer.position + offset;
-            }
+            HandleMovementInput();
             HandleOrthographicZoom();
-            //HandleRotation();
         }
-
-        // void HandleZoom() {
-        //     // camera zoom In
-        //     if (Input.mouseScrollDelta.y > 0) {
-        //         if (maxZoom < newZoom.y) {
-        //             newZoom += zoomAmount;
-        //         }
-        //     }
-        //     // camera zoom out
-        //     if (Input.mouseScrollDelta.y < 0) {
-        //         if (minZoom > newZoom.y) {
-        //             newZoom -= zoomAmount;
-        //         }
-        //     }
-        //     cameraTransform.localPosition = Vector3.Lerp(cameraTransform.localPosition, newZoom, Time.deltaTime * movementTime);
-        // }
 
         void HandleOrthographicZoom() {
 
@@ -81,55 +48,39 @@ namespace Control {
                     currentOrthoZoom += 0.5f;
                 }
             }
-            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, currentOrthoZoom, Time.deltaTime * movementTime); ;
+            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, currentOrthoZoom, Time.deltaTime * movementTime);
         }
 
-        void HandleRotation() {
-            // camera rotation if middle mouse is down
-            if (Input.GetMouseButton(2)) {
-                var axis = Input.GetAxis("Mouse X");
-                newRotation *= Quaternion.Euler(Vector3.up * axis * rotationAmount);
-            }
-            transform.rotation = Quaternion.Lerp(transform.rotation, newRotation, Time.deltaTime * movementTime);
-        }
-
-        // handle movement uses diagnals instead of cardinal movement, because the world is isometric
+        // Handle panning with middle mouse button
         void HandleMovementInput() {
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) {
-                newPosition += (transform.forward + transform.right).normalized * movementSpeed * 1.5f;
+            if (Input.GetMouseButtonDown(2)) {
+                lastMousePosition = Input.mousePosition;
             }
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) {
-                newPosition += (-transform.forward + -transform.right) * movementSpeed * 1.5f;
+
+            if (Input.GetMouseButton(2)) {
+                Vector3 delta = Input.mousePosition - lastMousePosition;
+                Vector3 cameraRight = cameraTransform.right;
+                Vector3 cameraUp = cameraTransform.up;
+
+                // Adjust movement directions
+                newPosition += (-cameraRight * delta.x + -cameraUp * delta.y) * movementSpeed * Time.deltaTime;
+
+                lastMousePosition = Input.mousePosition;
             }
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) {
-                newPosition += (-transform.forward + transform.right) * movementSpeed;
-            }
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) {
-                newPosition += (transform.forward + -transform.right) * movementSpeed; ;
-            }
+
             transform.position = Vector3.Lerp(transform.position, newPosition, Time.deltaTime * movementTime);
         }
 
-        void OnGUI() {
-            CheckDetatch();
-        }
+        void FindAndFocusOnPlayer() {
+            GameObject[] playerObjects = GameObject.FindGameObjectsWithTag("Player");
 
-        void CheckDetatch() {
-            if (Event.current.Equals(Event.KeyboardEvent("Space"))) {
-                detached = false;
-            }
-            if (Event.current.Equals(Event.KeyboardEvent("W")) || Event.current.Equals(Event.KeyboardEvent("A")) || Event.current.Equals(Event.KeyboardEvent("S")) || Event.current.Equals(Event.KeyboardEvent("D"))) {
-                // if we are already detached, dont re-detach
-                if (!detached) {
-                    // reset camera position and newposition to the player so detaching happens on top of player and 
-                    // not the last place you reattached from
-                    transform.position = currentPlayer.position + offset;
-                    newPosition = currentPlayer.position + offset;
-                    detached = true;
-
-                }
+            if (playerObjects.Length > 0) {
+                Transform firstPlayer = playerObjects[0].transform;
+                transform.position = firstPlayer.position + offset;
+                newPosition = transform.position;
+            } else {
+                Debug.LogWarning("No player characters found in the scene with the tag 'Player'");
             }
         }
     }
-
 }
